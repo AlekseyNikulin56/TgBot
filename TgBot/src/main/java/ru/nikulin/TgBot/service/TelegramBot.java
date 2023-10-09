@@ -2,7 +2,9 @@ package ru.nikulin.TgBot.service;
 
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.nikulin.TgBot.config.BotConfig;
 
 @Component
@@ -32,14 +34,39 @@ public class TelegramBot extends TelegramLongPollingBot {
             long chatId = update.getMessage().getChatId();
 
             switch (messageText){
-                case "/start": startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
+                case "/start":
+                    try {
+                        startCommandReceived(chatId, update.getMessage().getChat().getFirstName());
+                    } catch (TelegramApiException e) {
+                        throw new RuntimeException(e);
+                    }
+                default:
+                    try {
+                        sendMessage(chatId, "Извини, такая команда не поддерживается");
+                    } catch (TelegramApiException e) {
+                        throw new RuntimeException(e);
+                    }
             }
         }
     }
-    private void startCommandReceived(long chadId, String name){
+    private void startCommandReceived(long chadId, String name) throws TelegramApiException {
 
         String answer = "Привет, " + name + ", рад видеть тебя!";
+        sendMessage(chadId, answer);
 
+    }
+
+    private void sendMessage(long chatId, String textToSend) throws TelegramApiException{ //Метод для отправления сообщений
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText(textToSend);
+
+        try{
+            execute(message);
+
+        } catch (TelegramApiException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
